@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SwiftCab — Book a Ride</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0e14;
+      --surface: #13161f;
+      --card: #1a1e2a;
+      --accent: #f5c518;
+      --accent2: #ff6b35;
+      --text: #eeeef0;
+      --muted: #7b7f8e;
+      --border: rgba(255,255,255,0.07);
+      --radius: 14px;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND DECORATION ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(245,197,24,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 10% 90%, rgba(255,107,53,0.06) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(11,14,20,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: var(--font-head);
+      font-size: 1.5rem; font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .logo span { color: var(--accent); }
+    .nav-badge {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 0.78rem; color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 60px;
+      padding: 80px 40px 60px;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .hero-text h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 800; line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+    }
+    .hero-text h1 em {
+      font-style: normal; color: var(--accent);
+    }
+    .hero-text p {
+      color: var(--muted); font-size: 1rem;
+      line-height: 1.7; max-width: 380px;
+      margin-bottom: 32px;
+    }
+    .stats {
+      display: flex; gap: 32px; margin-top: 8px;
+    }
+    .stat-item { text-align: left; }
+    .stat-item strong {
+      display: block;
+      font-family: var(--font-head);
+      font-size: 1.6rem; font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-item span { font-size: 0.78rem; color: var(--muted); }
+
+    /* MAP PLACEHOLDER */
+    .hero-map {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      height: 340px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .hero-map::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.03) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.03) 40px);
+    }
+    .map-pin {
+      position: absolute;
+      width: 14px; height: 14px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 6px rgba(245,197,24,0.2);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .map-pin:nth-child(2) { top: 35%; left: 30%; }
+    .map-pin:nth-child(3) { top: 60%; left: 65%; background: var(--accent2); box-shadow: 0 0 0 6px rgba(255,107,53,0.2); animation-delay: 0.8s; }
+    .map-line {
+      position: absolute; width: 38%; height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      top: 47%; left: 31%; transform: rotate(20deg);
+      opacity: 0.5;
+    }
+    .map-label {
+      position: relative; z-index: 2;
+      font-family: var(--font-head);
+      font-size: 0.75rem; color: var(--muted);
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+
+    /* ── BOOKING CARD ── */
+    .booking-section {
+      position: relative; z-index: 1;
+      max-width: 1200px; margin: 0 auto 80px;
+      padding: 0 40px;
+      display: grid; grid-template-columns: 1.4fr 1fr;
+      gap: 28px;
+    }
+
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+    }
+    .form-card h2 {
+      font-family: var(--font-head);
+      font-size: 1.25rem; font-weight: 700;
+      margin-bottom: 28px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .step-badge {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: #000; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 0.78rem; font-weight: 700;
+      font-family: var(--font-head);
+      flex-shrink: 0;
+    }
+
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 0.75rem; color: var(--muted);
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 8px; font-weight: 500;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 13px 16px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input::placeholder { color: var(--muted); }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+    }
+    .field select option { background: var(--card); }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .btn-primary {
+      width: 100%; padding: 15px;
+      background: var(--accent);
+      color: #000; border: none; border-radius: var(--radius);
+      font-family: var(--font-head);
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.02em;
+      transition: transform 0.15s, box-shadow 0.15s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(245,197,24,0.25);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ── DRIVER CARDS ── */
+    .drivers-panel { display: flex; flex-direction: column; gap: 14px; }
+    .drivers-panel h2 {
+      font-family: var(--font-head);
+      font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 4px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      font-size: 0.78rem;
+    }
+    .driver-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .driver-card:hover {
+      border-color: rgba(245,197,24,0.3);
+      transform: translateX(3px);
+    }
+    .driver-card.selected {
+      border-color: var(--accent);
+      background: rgba(245,197,24,0.04);
+    }
+    .driver-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid; place-items: center;
+      font-family: var(--font-head); font-weight: 800;
+      font-size: 1rem; color: #000; flex-shrink: 0;
+    }
+    .driver-info { flex: 1; }
+    .driver-info strong {
+      display: block; font-size: 0.92rem;
+      font-weight: 600; margin-bottom: 3px;
+    }
+    .driver-info span {
+      font-size: 0.78rem; color: var(--muted);
+    }
+    .driver-meta { text-align: right; }
+    .driver-meta .rating {
+      font-size: 0.82rem; color: var(--accent);
+      font-weight: 600; margin-bottom: 4px;
+    }
+    .driver-meta .plate {
+      font-size: 0.72rem; color: var(--muted);
+      background: var(--surface);
+      padding: 3px 8px; border-radius: 4px;
+      font-family: monospace; letter-spacing: 0.05em;
+    }
+
+    /* ── TOAST / MODAL ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 18px 32px;
+      text-align: center;
+      z-index: 200;
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      min-width: 300px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast .toast-icon { font-size: 2rem; margin-bottom: 6px; }
+    .toast strong { display: block; font-family: var(--font-head); font-size: 1.1rem; margin-bottom: 4px; }
+    .toast p { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── STEPS INDICATOR ── */
+    .steps {
+      display: flex; align-items: center; gap: 0;
+      max-width: 1200px; margin: 0 auto 32px;
+      padding: 0 40px;
+      position: relative; z-index: 1;
+    }
+    .step {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.8rem; color: var(--muted); font-weight: 500;
+      transition: color 0.3s;
+    }
+    .step.active { color: var(--text); }
+    .step .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); transition: background 0.3s;
+    }
+    .step.active .dot { background: var(--accent); }
+    .step-line {
+      flex: 1; height: 1px;
+      background: var(--border); margin: 0 14px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding: 48px 20px 32px; gap: 32px; }
+      .booking-section { grid-template-columns: 1fr; padding: 0 20px; }
+      nav { padding: 14px 20px; }
+      .steps { padding: 0 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Swift<span>Cab</span></div>
+  <div class="nav-badge">🟢 6 drivers online</div>
+</nav>
+
+<!-- STEP INDICATOR -->
+<div class="steps">
+  <div class="step active" id="step1"><div class="dot"></div> Login</div>
+  <div class="step-line"></div>
+  <div class="step" id="step2"><div class="dot"></div> Destination</div>
+  <div class="step-line"></div>
+  <div class="step" id="step3"><div class="dot"></div> Your Details</div>
+  <div class="step-line"></div>
+  <div class="step" id="step4"><div class="dot"></div> Pick Driver</div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-text">
+    <h1>Your ride,<br/><em>your way.</em></h1>
+    <p>Fast cab bookings for every route. Login, pick your destination, and choose a trusted driver — all in under a minute.</p>
+    <div class="stats">
+      <div class="stat-item"><strong>6</strong><span>Active Drivers</span></div>
+      <div class="stat-item"><strong>~4 min</strong><span>Avg Arrival</span></div>
+      <div class="stat-item"><strong>4.9★</strong><span>Avg Rating</span></div>
+    </div>
+  </div>
+  <div class="hero-map">
+    <div class="map-pin"></div>
+    <div class="map-pin"></div>
+    <div class="map-line"></div>
+    <span class="map-label">Live Route Map</span>
+  </div>
+</section>
+
+<!-- BOOKING SECTION -->
+<section class="booking-section">
+
+  <!-- LEFT: FORM CARD (steps switch here) -->
+  <div class="form-card">
+
+    <!-- STEP 1: LOGIN -->
+    <div id="formStep1">
+      <h2><span class="step-badge">1</span> Login to your account</h2>
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Enter your username" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter your password" />
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Continue →</button>
+    </div>
+
+    <!-- STEP 2: DESTINATION -->
+    <div id="formStep2" style="display:none">
+      <h2><span class="step-badge">2</span> Where are you going?</h2>
+      <div class="field">
+        <label>Pickup Point</label>
+        <input type="text" id="pickup" placeholder="e.g. Central Station" />
+      </div>
+      <div class="field">
+        <label>Drop Point</label>
+        <input type="text" id="drop" placeholder="e.g. Airport Terminal 2" />
+      </div>
+      <button class="btn-primary" onclick="handleDestination()">Next Step →</button>
+    </div>
+
+    <!-- STEP 3: PASSENGER DETAILS -->
+    <div id="formStep3" style="display:none">
+      <h2><span class="step-badge">3</span> Passenger details</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>No. of Persons</label>
+          <select id="persons">
+            <option value="">Select</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Phone Number</label>
+          <input type="tel" id="phone" placeholder="10-digit number" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Trip Summary</label>
+        <input type="text" id="summary" readonly style="color:var(--muted);cursor:default;" />
+      </div>
+      <button class="btn-primary" onclick="handleDetails()">Choose Driver →</button>
+    </div>
+
+    <!-- STEP 4: CONFIRMATION -->
+    <div id="formStep4" style="display:none">
+      <h2><span class="step-badge">4</span> Confirm your booking</h2>
+      <div id="bookingSummary" style="background:var(--surface);border-radius:10px;padding:18px;margin-bottom:20px;font-size:0.88rem;line-height:2;color:var(--muted);"></div>
+      <button class="btn-primary" onclick="confirmBooking()">🚕 Book Cab Now</button>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: DRIVER PANEL -->
+  <div class="drivers-panel">
+    <h2>Available Drivers</h2>
+
+    <div class="driver-card" onclick="selectDriver(this,'Dom','XAB 235')">
+      <div class="driver-avatar">D</div>
+      <div class="driver-info">
+        <strong>Dom</strong>
+        <span>Sedan · 2 km away</span>
+      </div>
+      <div class="driver-meta">
+        <div class="rating">⭐ 4.9</div>
+        <div class="plate">XAB 235</div>
+      </div>
+    </div>
+
+    <div class="driver-card" onclick="selectDriver(this,'Brain','JN 302 7983')">
+      <div class="driver-avatar">B</div>
+      <div class="driver-info">
+        <strong>Brain</strong>
+        <span>SUV · 3 km away</span>
+      </div>
+      <div class="driver-meta">
+        <div class="rating">⭐ 4.8</div>
+        <div class="plate">JN 302 7983</div>
+      </div>
+    </div>
+
+    <div class="driver-card" onclick="selectDriver(this,'Travis','TN 1759')">
+      <div class="driver-avatar">T</div>
+      <div class="driver-info">
+        <strong>Travis</strong>
+        <span>Hatchback · 1 km away</span>
+      </div>
+      <div class="driver-meta">
+        <div class="rating">⭐ 4.7</div>
+        <div class="plate">TN 1759</div>
+      </div>
+    </div>
+
+    <div class="driver-card" onclick="selectDriver(this,'Ken Miles','TN GT40')">
+      <div class="driver-avatar">K</div>
+      <div class="driver-info">
+        <strong>Ken Miles</strong>
+        <span>Sedan · 4 km away</span>
+      </div>
+      <div class="driver-meta">
+        <div class="rating">⭐ 5.0</div>
+        <div class="plate">TN GT40</div>
+      </div>
+    </div>
+
+    <div class="driver-card" onclick="selectDriver(this,'Frank','TN 05 B93')">
+      <div class="driver-avatar">F</div>
+      <div class="driver-info">
+        <strong>Frank</strong>
+        <span>SUV · 5 km away</span>
+      </div>
+      <div class="driver-meta">
+        <div class="rating">⭐ 4.6</div>
+        <div class="plate">TN 05 B93</div>
+      </div>
+    </div>
+
+    <div class="driver-card" onclick="selectDriver(this,'Driver','TN 33 9999')">
+      <div class="driver-avatar">D</div>
+      <div class="driver-info">
+        <strong>Driver</strong>
+        <span>Sedan · 2 km away</span>
+      </div>
+      <div class="driver-meta">
+        <div class="rating">⭐ 4.8</div>
+        <div class="plate">TN 33 9999</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon">🚕</div>
+  <strong>Cab Booked Successfully!</strong>
+  <p id="toastMsg">Your driver is on the way.</p>
+</div>
+
+<script>
+  // Simple in-memory "DB" — replace with real backend calls
+  const USERS = {
+    Dom: "Dom3", Brain: "Brain5", Driver: "Driver6",
+    Travis: "Travis6", "Ken Miles": "Ken Miles8", Frank: "Frank5",
+    admin: "admin"
+  };
+
+  let state = { user: '', pickup: '', drop: '', persons: '', phone: '', driver: '', plate: '' };
+
+  function setStep(n) {
+    ['step1','step2','step3','step4'].forEach((id,i) => {
+      document.getElementById(id).classList.toggle('active', i < n);
+    });
+    ['formStep1','formStep2','formStep3','formStep4'].forEach((id,i) => {
+      document.getElementById(id).style.display = i === (n-1) ? 'block' : 'none';
+    });
+  }
+
+  function warn(msg) {
+    alert(msg); // replace with a nicer inline error if desired
+  }
+
+  function handleLogin() {
+    const name = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value.trim();
+    if (!name && !pass) return warn('Please enter username and password.');
+    if (!name) return warn('Please enter your username.');
+    if (!pass) return warn('Please enter your password.');
+    // Simple auth check — swap for real API
+    if (USERS[name] !== pass) return warn('Invalid username or password.');
+    state.user = name;
+    setStep(2);
+  }
+
+  function handleDestination() {
+    const pickup = document.getElementById('pickup').value.trim();
+    const drop   = document.getElementById('drop').value.trim();
+    if (!pickup && !drop) return warn('Enter both pickup and drop point.');
+    if (!pickup) return warn('Enter pickup point.');
+    if (!drop)   return warn('Enter drop point.');
+    state.pickup = pickup; state.drop = drop;
+    document.getElementById('summary').value = `${pickup}  →  ${drop}`;
+    setStep(3);
+  }
+
+  function handleDetails() {
+    const persons = document.getElementById('persons').value;
+    const phone   = document.getElementById('phone').value.trim();
+    if (!persons) return warn('Select number of persons.');
+    if (!phone)   return warn('Enter your phone number.');
+    if (!/^\d{10}$/.test(phone)) return warn('Enter a valid 10-digit phone number.');
+    if (!state.driver) return warn('Please select a driver from the panel on the right.');
+    state.persons = persons; state.phone = phone;
+    document.getElementById('bookingSummary').innerHTML =
+      `<b style="color:var(--text)">User</b>: ${state.user}<br>` +
+      `<b style="color:var(--text)">Pickup</b>: ${state.pickup}<br>` +
+      `<b style="color:var(--text)">Drop</b>: ${state.drop}<br>` +
+      `<b style="color:var(--text)">Persons</b>: ${state.persons}<br>` +
+      `<b style="color:var(--text)">Phone</b>: ${state.phone}<br>` +
+      `<b style="color:var(--text)">Driver</b>: ${state.driver} · ${state.plate}`;
+    setStep(4);
+  }
+
+  function confirmBooking() {
+    // Here you'd POST to your backend / SQLite API
+    document.getElementById('toastMsg').textContent =
+      `${state.driver} (${state.plate}) is heading to ${state.pickup}.`;
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 5000);
+  }
+
+  let selectedCard = null;
+  function selectDriver(el, name, plate) {
+    if (selectedCard) selectedCard.classList.remove('selected');
+    el.classList.add('selected');
+    selectedCard = el;
+    state.driver = name; state.plate = plate;
+  }
+</script>
+
+</body>
+</html>
